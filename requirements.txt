@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+typer
+sqlmodel
+gitpython
+langchain
+langchain-ollama
+watchdog
+pydantic
