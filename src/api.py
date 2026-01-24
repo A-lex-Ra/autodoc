@@ -78,3 +78,8 @@ def trigger_mapping(mapping_id: int, background_tasks: BackgroundTasks, session:
     
     background_tasks.add_task(process_now)
     return {"message": "Processing triggered"}
+
+@app.get("/mappings/{mapping_id}/logs", response_model=List[ProcessingLog])
+def get_mapping_logs(mapping_id: int, session: Session = Depends(get_session)):
+    logs = session.exec(select(ProcessingLog).where(ProcessingLog.mapping_id == mapping_id).order_by(ProcessingLog.timestamp.desc())).all()
+    return logs

@@ -5,6 +5,7 @@ from src.modules.processor import DiffProcessor
 from src.modules.generator import DocumentationGenerator
 from src.modules.writer import FileWriter
 from datetime import datetime
+import json
 
 class PipelineOrchestrator:
     def __init__(self, session: Session):
@@ -47,13 +48,13 @@ class PipelineOrchestrator:
             self.writer.write(mapping, doc_event)
 
             # 5. Update State
-            self._update_state(mapping, new_commit, "SUCCESS", f"Generated {len(doc_event.patches)} files")
+            self._update_state(mapping, new_commit, "SUCCESS", f"Generated {len(doc_event.patches)} files", json.dumps(doc_event.patches))
         
         except Exception as e:
             print(f"Pipeline failed for {mapping.name}: {e}")
             self._update_state(mapping, new_commit, "FAILED", str(e))
 
-    def _update_state(self, mapping: RepoMapping, commit: str, status: str, summary: str):
+    def _update_state(self, mapping: RepoMapping, commit: str, status: str, summary: str, patches: str = None):
         mapping.last_processed_commit = commit
         mapping.updated_at = datetime.utcnow()
         
@@ -61,7 +62,8 @@ class PipelineOrchestrator:
             mapping_id=mapping.id,
             commit_hash=commit,
             status=status,
-            summary=summary
+            summary=summary,
+            patches=patches
         )
         self.session.add(log)
         self.session.add(mapping)

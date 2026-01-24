@@ -7,7 +7,7 @@ from src.core.events import DocumentationGeneratedEvent
 from typing import Dict
 
 class DocumentationGenerator:
-    def __init__(self, provider: str = "ollama", model: str = "llama3"):
+    def __init__(self, provider: str = "ollama", model: str = "gpt-oss:20b"):
         self.llm = LLMFactory.create_llm(provider, model)
         self.parser = JsonOutputParser()
         

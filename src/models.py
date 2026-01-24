@@ -10,7 +10,7 @@ class RepoMapping(SQLModel, table=True):
     last_processed_commit: str = Field(default="")
     is_active: bool = Field(default=True)
     ai_provider: str = Field(default="ollama")
-    ai_model: str = Field(default="llama3")
+    ai_model: str = Field(default="gpt-oss:20b")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -21,3 +21,4 @@ class ProcessingLog(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     status: str
     summary: Optional[str] = None
+    patches: Optional[str] = None # JSON string of generated patches
