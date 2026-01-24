@@ -5,5 +5,7 @@ sqlmodel
 gitpython
 langchain
 langchain-ollama
+langchain-openai
 watchdog
 pydantic
+dotenv

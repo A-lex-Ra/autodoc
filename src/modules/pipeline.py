@@ -13,7 +13,7 @@ class PipelineOrchestrator:
         self.watcher = RepositoryWatcher()
         self.processor = DiffProcessor()
         # In a real app, provider/model might come from config
-        self.generator = DocumentationGenerator() 
+        self.generator = DocumentationGenerator(provider="openrouter", model="deepseek/deepseek-r1-0528:free") 
         self.writer = FileWriter()
 
     def run(self):

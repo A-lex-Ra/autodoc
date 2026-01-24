@@ -32,7 +32,7 @@ python -m src.cli register "\path\to\your\src" "\path\to\your\docs" --name "my-p
 ### 2. Start the Watcher & Server
 Run the daemon/server.
 ```bash
-python src.cli serve
+python -m src.cli serve
 ```
 The server runs on `http://127.0.0.1:8000`.
 
