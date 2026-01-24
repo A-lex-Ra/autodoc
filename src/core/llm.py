@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 class LLMFactory:
     @staticmethod
     def create_llm(provider: str = "ollama", model: str = "gpt-oss:20b") -> BaseChatModel:
+        load_dotenv()
         if provider == "ollama":
             return ChatOllama(model=model)
         if provider == "openrouter":
