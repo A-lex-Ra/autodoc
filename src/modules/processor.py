@@ -23,7 +23,7 @@ class DiffProcessor:
                     diff = [repo.git.show("HEAD")]
             else:
                 diff = repo.commit(new_commit).diff(mapping.last_processed_commit)
-            print(diff)
+            print(list(map(str, diff)))
             return diff
         except Exception as e:
             print(f"Error getting diff for {mapping.source_path}: {e}")
