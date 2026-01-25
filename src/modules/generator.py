@@ -1,10 +1,42 @@
 import json
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain.agents import create_agent
+from langchain.tools import tool
 from src.core.llm import LLMFactory
-from src.models import RepoMapping
+from src.db_models import RepoMapping
 from src.core.events import DocumentationGeneratedEvent
-from typing import Dict
+from typing import Dict, List
+
+from pathlib import Path
+
+@tool
+def list_repo_files(root: str) -> List[str]:
+    """List all files in the repository."""
+    return [
+        str(p) for p in Path(root).rglob("*")
+        if p.is_file()
+    ]
+
+
+@tool
+def read_repo_file(path: str) -> str:
+    """Read a repository file and return its contents."""
+    try:
+        return Path(path).read_text()
+    except Exception as e:
+        return f"ERROR: {e}"
+
+
+@tool
+def emit_documentation_patches(patches: Dict[str, str]) -> Dict[str, str]:
+    """
+    Final tool.
+    Use this to emit documentation updates.
+    Keys are doc file paths, values are full markdown contents.
+    """
+    return patches
+
 
 class DocumentationGenerator:
     def __init__(self, provider: str = "ollama", model: str = "gpt-oss:20b"):
@@ -32,15 +64,16 @@ class DocumentationGenerator:
             input_variables=["diff"],
         )
         self.chain = self.prompt | self.llm | self.parser
+        # self.agent = create_agent(model=self.llm, tools=[fs, diffs])
 
-    def generate(self, diff: str, mapping: RepoMapping, commit_hash: str) -> DocumentationGeneratedEvent:
+    def generate(self, diffs: list, mapping: RepoMapping, commit_hash: str) -> DocumentationGeneratedEvent:
         """
         Generates documentation patches based on the diff.
         """
         try:
             print(f"Generating docs for repo {mapping.id}, commit {commit_hash}...")
             # Invoke the chain
-            result: Dict[str, str] = self.chain.invoke({"diff": diff})
+            result: Dict[str, str] = self.chain.invoke({"diff": str(diffs)})
             
             return DocumentationGeneratedEvent(
                 repo_id=mapping.id,

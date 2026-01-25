@@ -2,7 +2,7 @@ import typer
 import uvicorn
 from sqlmodel import Session, select
 from src.database import create_db_and_tables, engine
-from src.models import RepoMapping, ProcessingLog
+from src.db_models import RepoMapping, ProcessingLog
 import os
 
 app = typer.Typer()

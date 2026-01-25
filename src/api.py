@@ -5,7 +5,7 @@ import asyncio
 from typing import List
 
 from src.database import get_session, create_db_and_tables, engine
-from src.models import RepoMapping, ProcessingLog
+from src.db_models import RepoMapping, ProcessingLog
 from src.modules.pipeline import PipelineOrchestrator
 
 # Global flag to control the generic watcher loop

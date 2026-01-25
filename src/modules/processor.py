@@ -1,8 +1,8 @@
 import git
-from src.models import RepoMapping
+from src.db_models import RepoMapping
 
 class DiffProcessor:
-    def get_diff(self, mapping: RepoMapping, new_commit: str) -> str:
+    def get_diffs(self, mapping: RepoMapping, new_commit: str) -> list:
         """
         Retrieves the git diff between the last processed commit and the new commit.
         If last_processed_commit is empty, it might diff against an empty tree or just return recent changes.
@@ -17,13 +17,13 @@ class DiffProcessor:
                 # Or, diff against the empty tree (full codebase). 
                 # Let's try diffing against HEAD~1 (changes in latest commit)
                  if repo.head.commit.parents:
-                    diff = repo.git.diff("HEAD~1", "HEAD")
+                    diff = repo.head.commit.diff("HEAD~1")
                  else:
                      # Initial commit
-                    diff = repo.git.show("HEAD")
+                    diff = [repo.git.show("HEAD")]
             else:
-                diff = repo.git.diff(mapping.last_processed_commit, new_commit)
-            
+                diff = repo.commit(new_commit).diff(mapping.last_processed_commit)
+            print(diff)
             return diff
         except Exception as e:
             print(f"Error getting diff for {mapping.source_path}: {e}")

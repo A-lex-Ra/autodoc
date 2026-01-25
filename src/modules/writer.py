@@ -1,6 +1,6 @@
 import os
 from src.core.events import DocumentationGeneratedEvent
-from src.models import RepoMapping
+from src.db_models import RepoMapping
 
 class FileWriter:
     def write(self, mapping: RepoMapping, event: DocumentationGeneratedEvent):

@@ -1,5 +1,7 @@
 from sqlmodel import Session
-from src.models import RepoMapping, ProcessingLog
+
+from src import config
+from src.db_models import RepoMapping, ProcessingLog
 from src.modules.watcher import RepositoryWatcher
 from src.modules.processor import DiffProcessor
 from src.modules.generator import DocumentationGenerator
@@ -7,13 +9,13 @@ from src.modules.writer import FileWriter
 from datetime import datetime
 import json
 
+
 class PipelineOrchestrator:
     def __init__(self, session: Session):
         self.session = session
         self.watcher = RepositoryWatcher()
         self.processor = DiffProcessor()
-        # In a real app, provider/model might come from config
-        self.generator = DocumentationGenerator(provider="openrouter", model="deepseek/deepseek-r1-0528:free") 
+        self.generator = DocumentationGenerator(provider=config.PROVIDER, model=config.MODEL)
         self.writer = FileWriter()
 
     def run(self):
@@ -34,22 +36,23 @@ class PipelineOrchestrator:
 
         try:
             # 2. Get Diff
-            diff = self.processor.get_diff(mapping, new_commit)
-            if not diff.strip():
+            diffs = self.processor.get_diffs(mapping, new_commit)
+            if len(diffs) == 0:
                 print("Diff is empty, skipping.")
                 self._update_state(mapping, new_commit, "SKIPPED", "Empty diff")
                 return
 
             # 3. Generate Docs
             # The output here is an Event
-            doc_event = self.generator.generate(diff, mapping, new_commit)
-            
+            doc_event = self.generator.generate(diffs, mapping, new_commit)
+
             # 4. Write
             self.writer.write(mapping, doc_event)
 
             # 5. Update State
-            self._update_state(mapping, new_commit, "SUCCESS", f"Generated {len(doc_event.patches)} files", json.dumps(doc_event.patches))
-        
+            self._update_state(mapping, new_commit, "SUCCESS", f"Generated {len(doc_event.patches)} files",
+                               json.dumps(doc_event.patches))
+
         except Exception as e:
             print(f"Pipeline failed for {mapping.name}: {e}")
             self._update_state(mapping, new_commit, "FAILED", str(e))
@@ -57,7 +60,7 @@ class PipelineOrchestrator:
     def _update_state(self, mapping: RepoMapping, commit: str, status: str, summary: str, patches: str = None):
         mapping.last_processed_commit = commit
         mapping.updated_at = datetime.utcnow()
-        
+
         log = ProcessingLog(
             mapping_id=mapping.id,
             commit_hash=commit,

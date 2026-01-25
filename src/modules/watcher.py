@@ -1,5 +1,5 @@
 import git
-from src.models import RepoMapping
+from src.db_models import RepoMapping
 from typing import Optional
 
 class RepositoryWatcher:
