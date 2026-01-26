@@ -3,6 +3,8 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.agents import create_agent
 from langchain.tools import tool
+from langchain.messages import HumanMessage
+from langchain_community.agent_toolkits import FileManagementToolkit
 from src.core.llm import LLMFactory
 from src.db_models import RepoMapping
 from src.core.events import DocumentationGeneratedEvent
@@ -44,8 +46,7 @@ class DocumentationGenerator:
         self.parser = JsonOutputParser()
         
         # We instruct the model to return a JSON object where keys are filenames and values are markdown content.
-        self.prompt = PromptTemplate(
-            template="""
+        self.prompt = """
             You are an expert technical writer. 
             Analyze the following git diff and generate or update the documentation.
             
@@ -60,11 +61,7 @@ class DocumentationGenerator:
             {diff}
             
             JSON OUTPUT:
-            """,
-            input_variables=["diff"],
-        )
-        self.chain = self.prompt | self.llm | self.parser
-        # self.agent = create_agent(model=self.llm, tools=[fs, diffs])
+            """
 
     def generate(self, diffs: list, mapping: RepoMapping, commit_hash: str) -> DocumentationGeneratedEvent:
         """
@@ -72,13 +69,17 @@ class DocumentationGenerator:
         """
         try:
             print(f"Generating docs for repo {mapping.id}, commit {commit_hash}...")
+            # docs_toolkit = FileManagementToolkit(
+            #     root_dir=str(Path(mapping.docs_path))
+            # )
+            agent = create_agent(model=self.llm, system_prompt=self.prompt.format(diff=str(diffs)))
             # Invoke the chain
-            result: Dict[str, str] = self.chain.invoke({"diff": str(diffs)})
-            
+            result = agent.invoke({"messages": []})
+            print(result['messages'][0]["content"])
             return DocumentationGeneratedEvent(
                 repo_id=mapping.id,
                 commit_hash=commit_hash,
-                patches=result
+                patches=dict(result['messages'][0]["content"])
             )
         except Exception as e:
             print(f"Error generating documentation: {e}")

@@ -3,17 +3,6 @@ import git
 from src.db_models import RepoMapping
 
 
-def _diff_to_str(d):
-    diff_text = d.diff.decode("utf-8", errors="ignore") if isinstance(d.diff, bytes) else d.diff
-
-    return "{" + f"""
-        "change_type": {d.change_type},
-        "old_path": {d.a_path},
-        "new_path": {d.b_path},
-        "diff": {diff_text}
-    """ + "}"
-
-
 class DiffProcessor:
     def get_diffs(self, mapping: RepoMapping, new_commit: str) -> list:
         """
