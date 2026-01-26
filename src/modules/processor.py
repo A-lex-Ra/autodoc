@@ -30,14 +30,14 @@ class DiffProcessor:
                 # Or, diff against the empty tree (full codebase). 
                 # Let's try diffing against HEAD~1 (changes in latest commit)
                 if repo.head.commit.parents:
-                    diffs = repo.head.commit.diff("HEAD~1", create_patch=True)
+                    diffs = repo.commit("HEAD~1").diff("HEAD", create_patch=True)
                     diffs = list(map(str, diffs))
                 else:
                     # Initial commit
                     diffs = [repo.git.show("HEAD")]
             else:
                 # will be problematic when rebase etc
-                diffs = repo.commit(new_commit).diff(mapping.last_processed_commit, create_patch=True)
+                diffs = repo.commit(mapping.last_processed_commit).diff(new_commit, create_patch=True)
                 diffs = list(map(str, diffs))
 
             return diffs
