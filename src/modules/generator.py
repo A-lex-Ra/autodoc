@@ -3,7 +3,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain.messages import HumanMessage
+from langchain.messages import HumanMessage, AIMessage
 from langchain_community.agent_toolkits import FileManagementToolkit
 from src.core.llm import LLMFactory
 from src.db_models import RepoMapping
@@ -14,7 +14,7 @@ from pathlib import Path
 
 @tool
 def list_repo_files(root: str) -> List[str]:
-    """List all files in the repository."""
+    """List all files in the repository. I recommend to check './src'"""
     return [
         str(p) for p in Path(root).rglob("*")
         if p.is_file()
@@ -23,7 +23,7 @@ def list_repo_files(root: str) -> List[str]:
 
 @tool
 def read_repo_file(path: str) -> str:
-    """Read a repository file and return its contents."""
+    """Read a repository file and return its contents. Relative paths recommended."""
     try:
         return Path(path).read_text()
     except Exception as e:
@@ -69,17 +69,20 @@ class DocumentationGenerator:
         """
         try:
             print(f"Generating docs for repo {mapping.id}, commit {commit_hash}...")
-            # docs_toolkit = FileManagementToolkit(
-            #     root_dir=str(Path(mapping.docs_path))
-            # )
-            agent = create_agent(model=self.llm, system_prompt=self.prompt.format(diff=str(diffs)))
+            docs_toolkit = FileManagementToolkit(
+                root_dir=str(Path(mapping.docs_path))
+            )
+            tools = docs_toolkit.get_tools()
+            tools.append(list_repo_files)
+            tools.append(read_repo_file)
+            agent = create_agent(model=self.llm, tools=tools, system_prompt=self.prompt.format(diff=str(diffs)))
             # Invoke the chain
             result = agent.invoke({"messages": []})
-            print(result['messages'][0]["content"])
+            print(result['messages'][0].content)
             return DocumentationGeneratedEvent(
                 repo_id=mapping.id,
                 commit_hash=commit_hash,
-                patches=dict(result['messages'][0]["content"])
+                patches=json.loads(result['messages'][0].content)
             )
         except Exception as e:
             print(f"Error generating documentation: {e}")
