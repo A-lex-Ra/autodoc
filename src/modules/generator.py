@@ -73,7 +73,7 @@ class DocumentationGenerator:
         try:
             print(f"Generating docs for repo {mapping.id}, commit {commit_hash}...")
             # Invoke the chain
-            result: Dict[str, str] = self.chain.invoke({"diff": list(map(str, diffs))})
+            result: Dict[str, str] = self.chain.invoke({"diff": str(diffs)})
             
             return DocumentationGeneratedEvent(
                 repo_id=mapping.id,

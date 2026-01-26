@@ -1,5 +1,18 @@
 import git
+
 from src.db_models import RepoMapping
+
+
+def _diff_to_str(d):
+    diff_text = d.diff.decode("utf-8", errors="ignore")
+
+    return f"""{
+        "change_type": {d.change_type},
+        "old_path": {d.a_path},
+        "new_path": {d.b_path},
+        "diff": {diff_text},
+    })"""
+
 
 class DiffProcessor:
     def get_diffs(self, mapping: RepoMapping, new_commit: str) -> list:
@@ -10,21 +23,21 @@ class DiffProcessor:
         """
         try:
             repo = git.Repo(mapping.source_path)
-            
+
             if not mapping.last_processed_commit:
                 # First run or reset: ideally we'd document everything. 
                 # For this MVP, let's just get the diff of the HEAD commit itself (stats from parent).
                 # Or, diff against the empty tree (full codebase). 
                 # Let's try diffing against HEAD~1 (changes in latest commit)
-                 if repo.head.commit.parents:
-                    diff = repo.head.commit.diff("HEAD~1")
-                 else:
-                     # Initial commit
-                    diff = [repo.git.show("HEAD")]
+                if repo.head.commit.parents:
+                    diffs = repo.head.commit.diff("HEAD~1")
+                else:
+                    # Initial commit
+                    diffs = [repo.git.show("HEAD")]
             else:
-                diff = repo.commit(new_commit).diff(mapping.last_processed_commit)
-            print(list(map(str, diff)))
-            return diff
+                diffs = repo.commit(new_commit).diff(mapping.last_processed_commit)
+            print(list(map(_diff_to_str, diffs)))
+            return list(map(_diff_to_str, diffs))
         except Exception as e:
             print(f"Error getting diff for {mapping.source_path}: {e}")
             return ""
