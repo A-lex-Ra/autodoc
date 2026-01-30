@@ -1,35 +1,33 @@
 import git
 
 from src.db_models import RepoMapping
-
+_EMPTY_TREE_SHA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 class DiffProcessor:
     def get_diffs(self, mapping: RepoMapping, new_commit: str) -> list:
         """
         Retrieves the git diff between the last processed commit and the new commit.
-        If last_processed_commit is empty, it might diff against an empty tree or just return recent changes.
-        For simplicity, if empty, we might just look at the last commit or all files.
+        If last_processed_commit is empty, diffs against empty tree (shows full codebase).
         """
         try:
             repo = git.Repo(mapping.source_path)
 
             if not mapping.last_processed_commit:
-                # First run or reset: ideally we'd document everything. 
-                # For this MVP, let's just get the diff of the HEAD commit itself (stats from parent).
-                # Or, diff against the empty tree (full codebase). 
-                # Let's try diffing against HEAD~1 (changes in latest commit)
-                if repo.head.commit.parents:
-                    diffs = repo.commit("HEAD~1").diff("HEAD", create_patch=True)
-                    diffs = list(map(str, diffs))
-                else:
-                    # Initial commit
-                    diffs = [repo.git.show("HEAD")]
+                # First run: diff against empty tree
+                base = git.NULL_TREE
             else:
-                # will be problematic when rebase etc
-                diffs = repo.commit(mapping.last_processed_commit).diff(new_commit, create_patch=True)
-                diffs = list(map(str, diffs))
+                base = mapping.last_processed_commit
 
-            return diffs
+            try:
+                diffs = repo.commit(new_commit).diff(base, create_patch=True, R=True)
+                return list(map(str, diffs))
+            except git.exc.GitCommandError as e:
+                # Handle rebase, force push, or missing commit
+                print(f"Warning: Could not diff {base}..{new_commit}: {e}")
+                print("Falling back to empty tree diff")
+                diffs = repo.commit(new_commit).diff(git.NULL_TREE, create_patch=True, R=True)
+                return list(map(str, diffs))
+
         except Exception as e:
             print(f"Error getting diff for {mapping.source_path}: {e}")
-            return ""
+            return []
