@@ -1,7 +1,7 @@
 import json
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.callbacks.base import CallbackManagerMixin
+from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain.messages import HumanMessage, AIMessage
@@ -17,7 +17,7 @@ from pathlib import Path
 logger = get_logger(__name__)
 
 
-class ToolMixin(CallbackManagerMixin):
+class ToolMixin(BaseCallbackHandler):
     def on_tool_start(
             self,
             serialized: dict[str, Any],
@@ -28,7 +28,7 @@ class ToolMixin(CallbackManagerMixin):
             inputs: dict[str, Any] | None = None,
             **kwargs: Any,
     ) -> Any:
-        logger.info("tool called, input: %s", input_str)
+        logger.info("tool %s called, input: %s", str(metadata), input_str)
 
 
 tool_callback = ToolMixin()
@@ -37,11 +37,12 @@ tool_callback = ToolMixin()
 @tool
 def list_repo_files(root: str) -> List[str]:
     """List all files in the repository. I recommend to check './src'"""
-    logger.info("list_repo_files called with arg root: %s", root)
-    return [
+    result = [
         str(p) for p in Path(root).rglob("*")
         if p.is_file()
     ]
+    logger.info("list_repo_files called with arg root: %s\nresult: %s", root, str(result))
+    return result
 
 
 @tool
@@ -49,7 +50,9 @@ def read_repo_file(path: str) -> str:
     """Read a repository file and return its contents. Relative paths recommended."""
     logger.info("read_repo_file called with arg path: %s", path)
     try:
-        return Path(path).read_text()
+        result = Path(path).read_text()
+        logger.info("read_repo_file called with arg path: %s\nresult: %s", path, str(result))
+        return result
     except Exception as e:
         return f"ERROR: {e}"
 
