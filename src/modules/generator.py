@@ -1,4 +1,5 @@
 import json
+import re
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.callbacks.base import BaseCallbackHandler
@@ -67,6 +68,12 @@ def emit_documentation_patches(patches: Dict[str, str]) -> Dict[str, str]:
     return patches
 
 
+def parse_json_string(raw_str: str) -> Dict[str, str]:
+    """Parse JSON, remove ```json/``` and spaces"""
+    cleaned = re.sub(r'```\w*', '', raw_str).strip()
+    return json.loads(cleaned)
+
+
 class DocumentationGenerator:
     def __init__(self, provider: str = "ollama", model: str = "gpt-oss:20b"):
         self.llm = LLMFactory.create_llm(provider, model)
@@ -109,7 +116,7 @@ class DocumentationGenerator:
             return DocumentationGeneratedEvent(
                 repo_id=mapping.id,
                 commit_hash=commit_hash,
-                patches=json.loads(result['messages'][0].content)
+                patches=parse_json_string(result['messages'][0].content)
             )
         except Exception as e:
             print(f"Error generating documentation: {e}")
